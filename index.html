@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最终修复版点击切换画廊</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8f8f8;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #gallery-container {
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+        }
+        #image-wrapper {
+            position: relative;
+            margin: 0 auto;
+            max-width: 100%;
+            display: inline-block;
+        }
+        #current-image {
+            max-width: 100%;
+            max-height: 80vh;
+            display: block;
+            margin: 0 auto;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: filter 0.6s ease;
+            object-fit: contain;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #image-text {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 90%;
+                    max-width: 800px;
+                    padding: 15px;
+                    color: white;
+                    font-size: 1.4rem;
+                    line-height: 1.6;
+                    opacity: 0;
+                    transition: opacity 0.6s ease;
+                    pointer-events: none;
+                    text-align: center;
+                    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+                    font-weight: 500;
+                    visibility: hidden;
+                    white-space: pre-line; /* 新增这一行 */
+                    font-family: "KaiTi", "楷体", serif;
+        }  
+        #counter {
+            font-size: 1.1rem;
+            color: #777;
+            margin: 25px 0;
+            letter-spacing: 1px;
+        }
+        .blur {
+            filter: blur(8px) brightness(0.9);
+        }
+        .show-text {
+            opacity: 1 !important;
+            visibility: visible !important; /* 显示时同时设置visibility */
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        .instructions {
+            color: #888;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div id="gallery-container">
+
+        
+        <div id="image-wrapper">
+            <img id="current-image" src="1.jpg" alt="画廊图片">
+            <div id="image-text" style="display: none;"></div> <!-- 初始完全隐藏 -->
+        </div>
+        
+        <div id="counter">1 / 4</div>
+    </div>
+
+    <script>
+        // 定义两个对应的文字库
+        const textLibraryA = [
+            "巴黎·蒙马特阶梯<br>他坐在圣心堂下的石阶上，素描本摊开在膝头，铅笔尖轻轻摩挲着纸面。远处塞纳河上的游船亮起灯，像一串被晚风揉碎的星星。咖啡馆的露天座上，有人弹起手风琴，音符混着可丽饼的黄油香飘上来。他忽然停笔，抬头望着鸽群掠过教堂圆顶——那轨迹像极了你某次转身时扬起的发梢。",  // 与B库第一句配对
+            "京都·哲学之道<br>樱花季刚过，石板路上还黏着几片褪色的花瓣。他蹲在溪边，指尖拨弄水流，惊起一尾锦鲤。茶屋的帘子被风掀起，抹茶香混着苔藓的潮湿漫过来。他起身时，和服袖口沾了水痕，像你昨夜梦里未干的泪渍。",  // 与B库第二句配对
+            "威尼斯·叹息桥下<br>贡多拉的船夫哼着老调，船桨搅碎了倒映在运河里的巴洛克浮雕。他站在桥洞的阴影里，数着水滴从砖缝渗落的节奏。某个瞬间，他错觉那是你踩在旧公寓木地板上的脚步声。  ",  // 与B库第三句配对
+            "纽约·中央公园长椅<br>冬日的阳光像融化的黄油，涂在他手里的旧书封面上。跑步的人呼出白雾，遛狗的老人丢出网球，而他只是摩挲着书页边缘的折角——那弧度像你总爱咬的吸管口。远处的马车铃铛响了一下，他抬头，以为会看见你从银杏大道的尽头走来。",
+            "布宜诺斯艾利斯·旧书店角落<br>探戈的旋律从街角漏进来，他蹲在书架最底层，指尖停在一本泛黄的《博尔赫斯诗选》。书脊上有咖啡渍，扉页写着某人的名字，墨迹已模糊成一片雨云。他忽然想起你曾说，南半球的星空像倒悬的迷宫。",  // 与B库第四句配对
+            "开普敦·桌山缆车站<br>云层像棉被一样盖住山顶，他站在候车队伍的末尾，数着脚下花岗岩的纹路。风里有海盐和普罗茶的味道，而他的相机始终没拿出来——镜头装不下整座城市的轮廓，就像他还没学会如何描述你。",
+            "伊斯坦布尔·香料市场<br>阳光穿过彩色玻璃，在藏红花和肉桂堆上投下碎钻般的光斑。他接过老板递来的苹果茶，杯壁烫得指尖发红。远处宣礼塔的阴影斜斜切过人群，而他的余光始终在搜寻——某个戴石榴红头巾的背影，会不会是你？",
+            "悉尼·邦迪海滩<br>冲浪板斜插在沙子里，他赤脚踩过退潮后的浪痕，捡起一枚被磨圆的蓝玻璃。礁石上晒着海带的渔民朝他挥手，而他只是把玻璃对准太阳——那透亮的光斑，像你某次在车窗上呵气画的笑脸。",
+            "上海·外滩钟楼<br>他靠在黄浦江边的栏杆上，风衣下摆被江风掀起，像半片未落定的船帆。对岸陆家嘴的霓虹刚刚亮起，倒映在水面碎成千万颗流动的糖纸。他低头看表，秒针划过罗马数字Ⅶ时，整点钟声惊飞了一群白鸽——那振翅声像极了你拆信时纸页的窸窣。",
+            "成都·茶馆竹椅<br>盖碗茶上的白雾模糊了他的镜片，他听着评书先生醒木一拍，讲完薛涛笺的最后一折。廊下画眉鸟突然叫了两声，他捏着核桃酥的手顿了顿，碎屑落在泛黄的《龙门阵》杂志上——那形状像你去年在杜甫草堂踩碎的银杏。",
+            "杭州·西湖长桥<br>雨刚停，他数着雷峰塔檐角坠下的水珠，在笔记本上画下第九个涟漪。远处有穿汉服的姑娘撑伞走过断桥，伞沿垂下的流苏扫过苏堤春晓的碑刻。他忽然合上本子，墨迹未干的柳枝线条晕染开来——那是你名字的偏旁。",
+            "西安·城墙根下<br>自行车铃铛惊醒了晒太阳的狸花猫，他蹲在碑林博物馆门口的拓片摊前，指尖抚过《多宝塔碑》上某个缺角的字。卖镜糕的小推车吱呀呀经过，蜂蜜混着桂花香飘过来时，他错觉闻到了你头发上的洗发水味道。",
+            "厦门·鼓浪屿钢琴码头<br>三角梅的影子在他白衬衫上跳动，渡轮鸣笛声惊散了琴键般的日光。他弯腰系鞋带时，发现蚂蚁正搬运着某个孩子掉落的饼干屑——那路线像你上次在沙坡尾迷路时画的涂鸦。",
+            "哈尔滨·中央大街面包石<br>他呵出的白雾挂在围巾绒毛上，手里刚买的马迭尔冰棍滴落一滴奶油。索菲亚教堂的鸽子突然全部起飞，雪末在阳光里形成彩虹的瞬间，他想起你说过极光像上帝打翻的调色盘。",
+            "苏州·平江路评弹馆<br>三弦声里，他摩挲着船票边缘的毛边，窗外乌篷船正穿过玉兰树的影子。唱《秦淮景》的女先生眼风扫过来时，他低头看杯中碧螺春的叶片舒展——像你去年留在拙政园门票背面的唇印。",
+            "广州·早茶楼<br>虾饺澄皮透出粉红的馅，他夹起流沙包时，金黄的馅料在筷尖颤了颤。隔壁桌阿婆用粤语念叨“趁热食”，他忽然想起你总爱把奶茶珍珠咬得咯吱响——那节奏正和窗外木棉落地的频率重合。",
+            "重庆·长江索道车厢<br>缆车穿过浓雾时，玻璃窗上凝满水珠。他用手擦出一小片清明，看见脚下嘉陵江与长江交汇处形成漩涡——像你搅拌鸳鸯锅时红油与清汤的边界。",
+            "北京·景山万春亭<br>落日给故宫屋脊镀上蜂蜜色，他数到第九只乌鸦飞过角楼时，口袋里的山楂糖纸沙沙作响。突然有小孩的气球脱手飞向鼓楼方向，那飘摇的轨迹像你去年在后海放走的河灯。",
+            "青岛·八大关梧桐道<br>他的相机镜头追着一片旋转下落的梧桐叶，直到它卡在排水沟的铁栅上。浪花声从礁石滩传来，啤酒屋的橡木桶正渗出麦芽香气。他蹲下来调整焦距时，发现蚂蚁在叶片脉络上爬出和你签名相似的笔画。",
+
+
+
+        ];
+        
+        const textLibraryB = [
+            "“你看，巴黎的黄昏都学会了犹豫，等我先遇见你，再落下帷幕。”",
+            "“这里的每一片枫叶，都在练习飘落的姿势，为了某天能轻轻跌进你掌心。”",
+            "“威尼斯的潮汐里，藏着我们错过的所有时差。”",
+            "“这座城市太吵了，可我还是听见了你沉默的回音。”",
+            "“如果宇宙真的弯曲，我们迟早会在某个拐角相撞。”",
+            "“有时候，等待比相遇更接近永恒。”",
+            "“这里的每一粒香料，都在等一个故事的开场。”",
+            "“南太平洋的风再大，也吹不散我手里这一点点你的幻影。”",
+            "“你看，连这座城市的倒影都在练习重逢的姿势。”",
+            "“时间在这里慢得刚好，够我等你从某条巷子拐进来。”",
+            "“江南的雨太缠绵，连思念都要洇湿三遍才敢下笔。”",
+            "“十三朝的风吹过城墙砖缝，总有一粒沙记得我们的前世。”",
+            "“连潮汐都在计算，我们脚印重合的概率。”",
+            "“零下二十度的浪漫，是等你来呵化我睫毛上的霜。”",
+            "“吴侬软语唱尽离合，不如你一句‘我来了’动听。”",
+            "“肠粉卷着晨光，云吞裹着晚霞，都不如你眼里的烟火馋人。”",
+            "“山城的雾再大，也藏不住我想见你的心跳。”",
+            "“中轴线的风知道，我在等一个偏离命运坐标的你。”",
+            "“每片落叶都是大地写给海洋的情书，而我在等你的落款。”"
+
+
+        ];
+
+        // 记录当前配对的索引
+        let pairedIndex = -1;
+        // 记录当前是否显示文字状态
+        let isShowingText = false;
+        
+        const galleryData = [
+            {
+                url: "1.jpg",
+                text: "当你的指尖轻触水晶球的瞬间——微光流转，雾气散开，一段陌生的日常在你眼前浮现。那个人或许正走过巴黎的雨巷，低头避开被风吹斜的伞沿；或许坐在京都的晨光里，指尖还留着未干的茶渍；而此刻，水晶球里的每一帧画面，都是宇宙在轻声提醒——“你看，他正走向你。”（伸手触碰，开启你的灵魂共鸣）"
+            },
+            {
+                url: "2.jpg",
+                getText: function() {
+                    // 如果是第二张图片，随机选择一个配对索引
+                    if (pairedIndex === -1) {
+                        pairedIndex = Math.floor(Math.random() * textLibraryA.length);
+                    }
+                    return textLibraryA[pairedIndex];
+                }
+            },
+            {
+                url: "3.jpg",
+                getText: function() {
+                    // 第三张图片使用与第二张配对的句子
+                    return textLibraryB[pairedIndex];
+                }
+            },
+            {
+                url: "4.jpg",
+                text:"命运是磨损的旧地图<br>而迷路是心照不宣的预谋让所有绕远的里程都成为伏笔<br>爱人的灵魂，是宇宙的航标"
+
+            }
+        ];
+        
+        let currentIndex = 0;
+        const imageElement = document.getElementById('current-image');
+        const textElement = document.getElementById('image-text');
+        const counterElement = document.getElementById('counter');
+        
+        function updateGallery() {
+            // 先隐藏文字
+            textElement.style.display = 'none';
+            textElement.classList.remove('show-text');
+            isShowingText = false;
+            
+            // 更新图片
+            imageElement.src = galleryData[currentIndex].url;
+            
+            // 图片加载完成后再设置文字内容
+            imageElement.onload = function() {
+                // 根据图片类型获取文字
+                if (galleryData[currentIndex].getText) {
+                    textElement.innerHTML = galleryData[currentIndex].getText();
+                } else {
+                    textElement.innerHTML = galleryData[currentIndex].text;
+                }
+                
+                // 显示文字容器（但内容仍不可见）
+                textElement.style.display = 'block';
+                
+                counterElement.textContent = `${currentIndex + 1} / ${galleryData.length}`;
+                
+                // 移除模糊效果
+                imageElement.classList.remove('blur');
+            };
+        }
+        
+        function handleImageClick() {
+            if (!isShowingText) {
+                // 第一次点击：显示文字
+                imageElement.classList.add('blur');
+                textElement.classList.add('show-text');
+                isShowingText = true;
+            } else {
+                // 第二次点击：切换到下一张图片
+                currentIndex = (currentIndex + 1) % galleryData.length;
+                
+                // 如果从第三张切换到第四张，重置配对索引
+                if (currentIndex === 3) {
+                    pairedIndex = -1;
+                }
+                
+                updateGallery();
+            }
+        }
+        
+        imageElement.addEventListener('click', handleImageClick);
+        
+        // 键盘导航支持
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') {
+                if (isShowingText) {
+                    currentIndex = (currentIndex + 1) % galleryData.length;
+                    if (currentIndex === 3) {
+                        pairedIndex = -1;
+                    }
+                    updateGallery();
+                } else {
+                    imageElement.classList.add('blur');
+                    textElement.classList.add('show-text');
+                    isShowingText = true;
+                }
+            } else if (e.key === 'ArrowLeft') {
+                if (isShowingText) {
+                    imageElement.classList.remove('blur');
+                    textElement.classList.remove('show-text');
+                    isShowingText = false;
+                } else {
+                    currentIndex = (currentIndex - 1 + galleryData.length) % galleryData.length;
+                    if (currentIndex === 3) {
+                        pairedIndex = -1;
+                    }
+                    updateGallery();
+                }
+            }
+        });
+        
+        // 初始化画廊
+        updateGallery();
+    </script>
+</body>
+</html>
